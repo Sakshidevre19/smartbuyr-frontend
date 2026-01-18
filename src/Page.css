@@ -1,0 +1,41 @@
+.page-container {
+  min-height: 80vh;
+  padding: 2rem 0;
+  background: #fafafa;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.faq-item {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.faq-item h4 {
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+}
+
+.track-input {
+  padding: 0.8rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 1rem;
+  margin-right: 1rem;
+  width: 300px;
+}
+
+.track-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
