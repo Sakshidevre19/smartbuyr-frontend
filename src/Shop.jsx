@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getApiUrl } from './services/api'
 
 export function Shop() {
   const [products, setProducts] = useState([])
@@ -18,10 +19,12 @@ export function Shop() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/products/')
+      const response = await fetch(`${getApiUrl()}/api/products/`)
       if (response.ok) {
         const data = await response.json()
-        setProducts(data.slice(0, 12))
+        // Handle paginated response
+        const productsData = data.results || data || []
+        setProducts(productsData.slice(0, 12))
       }
     } catch (error) {
       console.error('Error fetching products:', error)
@@ -95,11 +98,17 @@ export function Shop() {
         ) : (
           <div className="product-grid">
             {products.map(product => (
-              <div key={product.id} className="product-card">
-                <div className="product-image">📦</div>
+              <div key={product.id} className="product-card" onClick={() => navigate(`/product/${product.id}`)} style={{cursor: 'pointer'}}>
+                <div className="product-image">
+                  {product.image ? (
+                    <img src={product.image} alt={product.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                  ) : (
+                    <span>📦</span>
+                  )}
+                </div>
                 <div className="product-info">
                   <h3 className="product-title">{product.name}</h3>
-                  <div className="product-price">${product.price}</div>
+                  <div className="product-price">₹{product.price}</div>
                   <div className="product-rating">⭐ {product.rating} ({product.reviews} reviews)</div>
                   <button className="btn btn-secondary">Add to Cart</button>
                 </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from './services/api';
 
 const Cart = ({ user, token }) => {
   const [cartItems, setCartItems] = useState([]);
@@ -17,7 +18,7 @@ const Cart = ({ user, token }) => {
 
   const fetchCart = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/accounts/cart/', {
+      const response = await fetch(`${getApiUrl()}/api/accounts/cart/`, {
         headers: {
           'Authorization': `Token ${token}`
         }
@@ -34,7 +35,7 @@ const Cart = ({ user, token }) => {
 
   const removeFromCart = async (itemId) => {
     try {
-      await fetch(`http://localhost:8000/api/accounts/cart/remove/${itemId}/`, {
+      await fetch(`${getApiUrl()}/api/accounts/cart/remove/${itemId}/`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Token ${token}`

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getApiUrl } from './services/api'
 
 export function AuthModal({ isOpen, onClose, mode, onSwitchMode }) {
   const [formData, setFormData] = useState({
@@ -26,7 +27,7 @@ export function AuthModal({ isOpen, onClose, mode, onSwitchMode }) {
 
     try {
       const endpoint = mode === 'signup' ? '/api/signup/' : '/api/signin/'
-      const response = await fetch(`http://localhost:8000${endpoint}`, {
+      const response = await fetch(`${getApiUrl()}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

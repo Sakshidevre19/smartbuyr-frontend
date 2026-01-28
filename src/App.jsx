@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
+import axios from "axios";
 import { Routes, Route, useNavigate, useSearchParams } from 'react-router-dom'
+import { getApiUrl } from './services/api'
 import { AuthModal } from './AuthModal'
 import { SizeGuide } from './SizeGuide'
 import { Page } from './Page'
@@ -33,7 +35,6 @@ function SearchResults() {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const navigate = useNavigate()
   const query = searchParams.get('q') || ''
-
   useEffect(() => {
     setSearchQuery(query)
     const userData = localStorage.getItem('user')
@@ -44,11 +45,9 @@ function SearchResults() {
       fetchSearchResults(query)
     }
   }, [query])
-
   useEffect(() => {
     applyFilters()
   }, [products, filters])
-
   const applyFilters = () => {
     let filtered = [...products]
     
@@ -79,40 +78,38 @@ function SearchResults() {
     
     setFilteredProducts(filtered)
   }
-
   const handleSearch = (e) => {
     e.preventDefault()
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
     }
   }
-
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     setUser(null)
     navigate('/')
   }
-
-  const fetchSearchResults = async (searchQuery) => {
-    try {
-      setLoading(true)
-      const response = await fetch(`http://localhost:8000/api/products/search/?q=${encodeURIComponent(searchQuery)}`)
-      if (response.ok) {
-        const data = await response.json()
-        setProducts(data)
-        
-        // Get recommendations for first product if available
-        if (data.length > 0) {
-          fetchRecommendations(data[0].id)
-        }
+const fetchSearchResults = async (searchQuery) => {
+  try {
+    setLoading(true);
+    const response = await fetch(
+      `${getApiUrl()}/api/products/search/?q=${encodeURIComponent(searchQuery)}`
+    );
+    if (response.ok) {
+      const data = await response.json();
+      // Handle paginated response
+      setProducts(data.results || []);
+      if (data.results && data.results.length > 0) {
+        fetchRecommendations(data.results[0].id);
       }
-    } catch (error) {
-      console.error('Search error:', error)
-    } finally {
-      setLoading(false)
     }
+  } catch (error) {
+    console.error("Search error:", error);
+  } finally {
+    setLoading(false);
   }
+};
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => ({
@@ -120,7 +117,6 @@ function SearchResults() {
       [filterType]: value
     }))
   }
-
   const clearFilters = () => {
     setFilters({
       priceRange: [0, 25000],
@@ -128,10 +124,9 @@ function SearchResults() {
       sortBy: 'relevance'
     })
   }
-
   const fetchRecommendations = async (productId) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/products/${productId}/recommendations/`)
+      const response = await fetch(`${getApiUrl()}/api/products/${productId}/recommendations/`)
       if (response.ok) {
         const data = await response.json()
         setRecommendations(data)
@@ -140,7 +135,6 @@ function SearchResults() {
       console.error('Recommendations error:', error)
     }
   }
-
   const addToWishlistFromGrid = async (e, productId) => {
     e.stopPropagation()
     const token = localStorage.getItem('token')
@@ -149,7 +143,7 @@ function SearchResults() {
       return
     }
     try {
-      const response = await fetch('http://localhost:8000/api/accounts/wishlist/add/', {
+      const response = await fetch(`${getApiUrl()}/api/accounts/wishlist/add/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -169,6 +163,33 @@ function SearchResults() {
     }
   }
 
+  const addToCartFromGrid = async (e, productId) => {
+    e.stopPropagation()
+    const token = localStorage.getItem('token')
+    if (!user || !token) {
+      setShowLoginPrompt(true)
+      return
+    }
+    try {
+      const response = await fetch(`${getApiUrl()}/api/accounts/cart/add/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`
+        },
+        body: JSON.stringify({ product_id: productId, quantity: 1 })
+      })
+      const data = await response.json()
+      setNotification({ 
+        message: data.message || 'Added to cart successfully!', 
+        type: 'success', 
+        isVisible: true 
+      })
+    } catch (error) {
+      console.error('Error adding to cart:', error)
+      setNotification({ message: 'Failed to add to cart', type: 'error', isVisible: true })
+    }
+  }
   return (
     <div className="search-page">
       <header className="header">
@@ -360,7 +381,6 @@ function SearchResults() {
     </div>
   )
 }
-
 function HomePage() {
   const [authModal, setAuthModal] = useState({ isOpen: false, mode: 'signin' })
   const [user, setUser] = useState(null)
@@ -370,8 +390,8 @@ function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [notification, setNotification] = useState({ message: '', type: '', isVisible: false })
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const [page, setPage] = useState(1);
   const navigate = useNavigate()
-
   useEffect(() => {
     const token = localStorage.getItem('token')
     const userData = localStorage.getItem('user')
@@ -399,61 +419,41 @@ function HomePage() {
     
     return () => observer.disconnect()
   }, [])
-
   const fetchProducts = async () => {
     try {
-      console.log('Fetching products from API...')
-      const response = await fetch('http://localhost:8000/api/products/')
-      console.log('Response status:', response.status)
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      console.log('Products received:', data.length)
-      setProducts(data.slice(0, 6))
-    } catch (error) {
-      console.error('Error fetching products:', error)
-      // Fallback to static products if API fails
-      setProducts([
-        { id: 1, name: 'Premium Headphones', price: '$299', image: '🎧' },
-        { id: 2, name: 'Smart Watch', price: '$199', image: '⌚' },
-        { id: 3, name: 'Wireless Speaker', price: '$149', image: '🔊' },
-        { id: 4, name: 'Laptop Stand', price: '$79', image: '💻' },
-        { id: 5, name: 'Phone Case', price: '$29', image: '📱' },
-        { id: 6, name: 'Desk Lamp', price: '$89', image: '💡' }
-      ])
+      setLoading(true);
+      const response = await axios.get(`${getApiUrl()}/api/products/`);
+      // Handle paginated response
+      const productsData = response.data.results || response.data || [];
+      setProducts(productsData);
+    } catch (err) {
+      console.error("Error fetching products:", err);
+      setProducts([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     setUser(null)
   }
-
   const openAuthModal = (mode) => {
     setAuthModal({ isOpen: true, mode })
   }
-
   const closeAuthModal = () => {
     setAuthModal({ isOpen: false, mode: 'signin' })
   }
-
   const switchAuthMode = (mode) => {
     setAuthModal({ isOpen: true, mode })
   }
-
   const handleSearch = (e) => {
     e.preventDefault()
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
     }
   }
-
   const addToWishlistFromHomepage = async (e, productId) => {
     e.stopPropagation()
     const token = localStorage.getItem('token')
@@ -462,7 +462,7 @@ function HomePage() {
       return
     }
     try {
-      const response = await fetch('http://localhost:8000/api/accounts/wishlist/add/', {
+      const response = await fetch(`${getApiUrl()}/api/accounts/wishlist/add/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -482,6 +482,33 @@ function HomePage() {
     }
   }
 
+  const addToCartFromHomepage = async (e, productId) => {
+    e.stopPropagation()
+    const token = localStorage.getItem('token')
+    if (!user || !token) {
+      setShowLoginPrompt(true)
+      return
+    }
+    try {
+      const response = await fetch(`${getApiUrl()}/api/accounts/cart/add/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`
+        },
+        body: JSON.stringify({ product_id: productId, quantity: 1 })
+      })
+      const data = await response.json()
+      setNotification({ 
+        message: data.message || 'Added to cart successfully!', 
+        type: 'success', 
+        isVisible: true 
+      })
+    } catch (error) {
+      console.error('Error adding to cart:', error)
+      setNotification({ message: 'Failed to add to cart', type: 'error', isVisible: true })
+    }
+  }
   return (
     <div className="App">
       <header className="header">
@@ -529,7 +556,6 @@ function HomePage() {
           </nav>
         </div>
       </header>
-
       <section className="hero">
         <div className="container">
           <div className="hero-content">
@@ -538,7 +564,6 @@ function HomePage() {
           </div>
         </div>
       </section>
-
       <section className="products animate-on-scroll">
         <div className="container">
           <h2 className="section-title">Featured Products</h2>
@@ -570,7 +595,6 @@ function HomePage() {
           </div>
         </div>
       </section>
-
       <footer className="footer">
         <div className="container">
           <div className="footer-content">
@@ -638,7 +662,6 @@ function HomePage() {
           </div>
         </div>
       </footer>
-
       <AuthModal
         isOpen={authModal.isOpen}
         onClose={closeAuthModal}
@@ -673,11 +696,9 @@ function HomePage() {
     </div>
   )
 }
-
 function App() {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
-
   useEffect(() => {
     const storedToken = localStorage.getItem('token')
     const userData = localStorage.getItem('user')
@@ -686,7 +707,6 @@ function App() {
       setUser(JSON.parse(userData))
     }
   }, [])
-
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
@@ -703,5 +723,4 @@ function App() {
     </Routes>
   )
 }
-
 export default App

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { getApiUrl } from './services/api'
 import Notification from './Notification'
 import LoginPrompt from './LoginPrompt'
 
@@ -30,7 +31,7 @@ export function ProductDetail() {
 
   const fetchProduct = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/products/${id}/`)
+      const response = await fetch(`${getApiUrl()}/api/products/${id}/`)
       if (response.ok) {
         const data = await response.json()
         setProduct(data)
@@ -67,7 +68,7 @@ export function ProductDetail() {
       return
     }
     try {
-      await fetch('http://localhost:8000/api/accounts/cart/add/', {
+      await fetch(`${getApiUrl()}/api/accounts/cart/add/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +89,7 @@ export function ProductDetail() {
       return
     }
     try {
-      const response = await fetch('http://localhost:8000/api/accounts/wishlist/add/', {
+      const response = await fetch(`${getApiUrl()}/api/accounts/wishlist/add/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from './services/api';
 import Notification from './Notification';
 
 const Wishlist = ({ user, token }) => {
@@ -18,7 +19,7 @@ const Wishlist = ({ user, token }) => {
 
   const fetchWishlist = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/accounts/wishlist/', {
+      const response = await fetch(`${getApiUrl()}/api/accounts/wishlist/`, {
         headers: {
           'Authorization': `Token ${token}`
         }
@@ -34,7 +35,7 @@ const Wishlist = ({ user, token }) => {
 
   const removeFromWishlist = async (itemId) => {
     try {
-      await fetch(`http://localhost:8000/api/accounts/wishlist/remove/${itemId}/`, {
+      await fetch(`${getApiUrl()}/api/accounts/wishlist/remove/${itemId}/`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Token ${token}`
@@ -48,7 +49,7 @@ const Wishlist = ({ user, token }) => {
 
   const addToCart = async (productId) => {
     try {
-      await fetch('http://localhost:8000/api/accounts/cart/add/', {
+      await fetch(`${getApiUrl()}/api/accounts/cart/add/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
